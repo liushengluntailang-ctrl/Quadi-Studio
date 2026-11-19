@@ -1,0 +1,80 @@
+name: Quadi Studio - Lightweight CI
+
+on:
+  push:
+    branches:
+      - quadi-development
+      - main
+  pull_request:
+    branches:
+      - quadi-development
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: quadi-lightweight-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  python-tests-and-checks:
+    name: Python Unit Tests & Repo Integrity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository (without upstream submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install standalone pytest dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest Pillow numpy pypdfium2
+
+      - name: Verify required Mixar/Quadi baseline and license files
+        run: |
+          set -euo pipefail
+          required_files=(
+            "LICENSE"
+            "REUSE.toml"
+            "NOTICE.md"
+            "Makefile"
+            "pytest.ini"
+            ".env.example"
+          )
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "::error::Required file missing: $file"
+              exit 1
+            fi
+          done
+
+          required_dirs=(
+            "LICENSES"
+            "src/scripts"
+            "tests"
+          )
+          for dir in "${required_dirs[@]}"; do
+            if [ ! -d "$dir" ]; then
+              echo "::error::Required directory missing: $dir"
+              exit 1
+            fi
+          done
+
+      - name: Check Python syntax in src/scripts
+        run: |
+          python -m compileall -q src/scripts
+
+      - name: Run standalone pytest suite
+        run: |
+          python -m pytest -q
