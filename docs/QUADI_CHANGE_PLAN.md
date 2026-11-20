@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Quadi Studio Contributors
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Quadi Studio — 変更計画・開発運用基準
 
 ## 1. リポジトリ・ブランチ方針
